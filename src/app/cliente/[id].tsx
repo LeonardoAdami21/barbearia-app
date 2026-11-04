@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Aviso, Btn, Card, Empty, Field, Section, StatusTag, st } from '@/components/ui';
+import { Aviso, Btn, Card, Empty, FECHAR_TECLADO, Field, Section, StatusTag, st } from '@/components/ui';
 import { C, R, S, T } from '@/constants/theme';
 import { buscarServico, estatisticasCliente } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
@@ -42,7 +42,7 @@ export default function DetalheCliente() {
   }
 
   return (
-    <ScrollView style={st.screen} contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView style={st.screen} contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
       {editando ? (
         <Card style={{ gap: S.md }}>
           <Field label="Nome" value={nome} onChangeText={setNome} />
@@ -115,8 +115,12 @@ export default function DetalheCliente() {
 function Numero({ valor, rotulo, cor }: { valor: string; rotulo: string; cor?: string }) {
   return (
     <View style={styles.num}>
-      <Text style={[styles.numValor, cor ? { color: cor } : null]}>{valor}</Text>
-      <Text style={st.muted}>{rotulo}</Text>
+      <Text style={[styles.numValor, cor ? { color: cor } : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        {valor}
+      </Text>
+      <Text style={st.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+        {rotulo}
+      </Text>
     </View>
   );
 }

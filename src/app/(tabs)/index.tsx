@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Empty, StatusTag, Tag, st } from '@/components/ui';
+import { CORTAR_RIPPLE, Card, Empty, RIPPLE, RIPPLE_ESCURO, StatusTag, Tag, st } from '@/components/ui';
 import { C, R, S, T, TOQUE } from '@/constants/theme';
 import {
   buscarCliente,
@@ -38,10 +38,14 @@ export default function AgendaScreen() {
 
   return (
     <View style={[st.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, st.limite]}>
         <View style={{ flex: 1 }}>
-          <Text style={st.muted}>{state.config.nomeBarbearia}</Text>
-          <Text style={st.h1}>{rotuloDia(dia)}</Text>
+          <Text style={st.muted} numberOfLines={1}>
+            {state.config.nomeBarbearia}
+          </Text>
+          <Text style={st.h1} numberOfLines={1} adjustsFontSizeToFit>
+            {rotuloDia(dia)}
+          </Text>
         </View>
         {dia !== hoje() && (
           <Pressable
@@ -49,6 +53,7 @@ export default function AgendaScreen() {
             accessibilityLabel="Voltar para hoje"
             onPress={() => setDia(hoje())}
             hitSlop={S.sm}
+            android_ripple={RIPPLE}
             style={({ pressed }) => [styles.hojeBtn, pressed && st.pressed]}>
             <Text style={styles.hojeTxt}>Hoje</Text>
           </Pressable>
@@ -68,11 +73,16 @@ export default function AgendaScreen() {
               key={d}
               accessibilityRole="button"
               accessibilityState={{ selected: sel }}
+              android_ripple={sel ? RIPPLE_ESCURO : RIPPLE}
               onPress={() => setDia(d)}
-              style={[styles.dia, sel && styles.diaSel]}>
-              <Text style={[styles.diaSemana, sel && styles.diaTxtSel]}>{diaSemanaCurto(d)}</Text>
-              <Text style={[styles.diaNum, sel && styles.diaTxtSel]}>{diaDoMes(d)}</Text>
-              <Text style={[styles.diaMes, sel && styles.diaTxtSel]}>
+              style={({ pressed }) => [styles.dia, sel && styles.diaSel, pressed && st.pressed]}>
+              <Text style={[styles.diaSemana, sel && styles.diaTxtSel]} maxFontSizeMultiplier={1.2}>
+                {diaSemanaCurto(d)}
+              </Text>
+              <Text style={[styles.diaNum, sel && styles.diaTxtSel]} maxFontSizeMultiplier={1.2}>
+                {diaDoMes(d)}
+              </Text>
+              <Text style={[styles.diaMes, sel && styles.diaTxtSel]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
                 {n > 0 ? `${n} hr` : mesCurto(d)}
               </Text>
             </Pressable>
@@ -105,7 +115,9 @@ export default function AgendaScreen() {
                 key={a.id}
                 onPress={() => router.push(`/agendamento/${a.id}`)}
                 style={[styles.item, apagado && { opacity: 0.5 }]}>
-                <Text style={styles.hora}>{a.hora}</Text>
+                <Text style={styles.hora} maxFontSizeMultiplier={1.3}>
+                  {a.hora}
+                </Text>
                 <View style={{ flex: 1, gap: S.sm }}>
                   <Text style={st.h2} numberOfLines={1}>
                     {cliente?.nome ?? 'Cliente removido'}
@@ -133,6 +145,8 @@ export default function AgendaScreen() {
 
       <Pressable
         accessibilityLabel="Novo agendamento"
+        accessibilityRole="button"
+        android_ripple={RIPPLE_ESCURO}
         onPress={() => router.push({ pathname: '/agendamento/novo', params: { data: dia } })}
         style={({ pressed }) => [styles.fab, pressed && st.pressed]}>
         <Ionicons name="add" size={30} color={C.accentText} />
@@ -144,10 +158,12 @@ export default function AgendaScreen() {
 function Resumo({ valor, rotulo }: { valor: string; rotulo: string }) {
   return (
     <View style={styles.resumoItem}>
-      <Text style={styles.resumoValor} numberOfLines={1}>
+      <Text style={styles.resumoValor} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
         {valor}
       </Text>
-      <Text style={st.muted}>{rotulo}</Text>
+      <Text style={st.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+        {rotulo}
+      </Text>
     </View>
   );
 }
@@ -168,6 +184,7 @@ const styles = StyleSheet.create({
     minHeight: TOQUE - S.xs,
     justifyContent: 'center',
     marginBottom: S.xxs,
+    ...CORTAR_RIPPLE,
   },
   hojeTxt: { ...T.body, color: C.accent, fontWeight: '700' },
   dias: { paddingHorizontal: S.lg, paddingVertical: S.sm, gap: DIA_GAP },
@@ -178,6 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     alignItems: 'center',
     gap: S.xxs,
+    ...CORTAR_RIPPLE,
   },
   diaSel: { backgroundColor: C.accent },
   diaSemana: { ...T.caption, color: C.muted },
@@ -194,7 +212,7 @@ const styles = StyleSheet.create({
   },
   resumoValor: { ...T.title, color: C.text },
   item: { flexDirection: 'row', alignItems: 'center', gap: S.md },
-  hora: { ...T.title, color: C.accent, width: 60 },
+  hora: { ...T.title, color: C.accent, minWidth: 60 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: S.xs },
   fab: {
     position: 'absolute',
@@ -207,6 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
+    ...CORTAR_RIPPLE,
     shadowColor: C.shadow,
     shadowOpacity: 0.4,
     shadowRadius: 8,
