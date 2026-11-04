@@ -11,7 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { C, R, S, STATUS } from '@/constants/theme';
+import { C, R, S, STATUS, T, TOQUE } from '@/constants/theme';
 import type { Status } from '@/types';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -38,7 +38,7 @@ const VARIANTES = {
   secondary: { bg: C.surface2, fg: C.text, borda: C.border },
   success: { bg: 'transparent', fg: C.success, borda: C.success },
   danger: { bg: 'transparent', fg: C.danger, borda: C.danger },
-  whatsapp: { bg: C.whatsapp, fg: '#06260F', borda: C.whatsapp },
+  whatsapp: { bg: C.whatsapp, fg: C.onWhatsapp, borda: C.whatsapp },
   ghost: { bg: 'transparent', fg: C.muted, borda: 'transparent' },
 } as const;
 
@@ -93,6 +93,8 @@ export function Chip({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!selected, disabled: !!disabled }}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
@@ -131,7 +133,7 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
     <View style={{ gap: S.xs }}>
       <Text style={st.label}>{label}</Text>
       <TextInput
-        placeholderTextColor="#6E6A63"
+        placeholderTextColor={C.placeholder}
         style={[st.input, props.multiline && { minHeight: 130, textAlignVertical: 'top' }, style]}
         {...props}
       />
@@ -198,9 +200,9 @@ export const st = StyleSheet.create({
     justifyContent: 'center',
     gap: S.sm,
   },
-  btnText: { fontSize: 16, fontWeight: '700' },
+  btnText: T.button,
   chip: {
-    minHeight: 44,
+    minHeight: TOQUE,
     paddingHorizontal: S.md,
     paddingVertical: S.sm,
     borderRadius: R.md,
@@ -211,44 +213,44 @@ export const st = StyleSheet.create({
     justifyContent: 'center',
   },
   chipSel: { backgroundColor: C.accent, borderColor: C.accent },
-  chipOff: { opacity: 0.35 },
-  chipText: { color: C.text, fontSize: 15, fontWeight: '600' },
-  chipSub: { color: C.muted, fontSize: 12, marginTop: 2 },
+  chipOff: { opacity: 0.45 },
+  chipText: { ...T.bodyStrong, color: C.text },
+  chipSub: { ...T.caption, fontWeight: '400', color: C.muted, marginTop: S.xxs },
   riscado: { textDecorationLine: 'line-through' },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: S.xs,
     borderWidth: 1,
     borderRadius: R.pill,
     paddingHorizontal: S.sm,
-    paddingVertical: 2,
+    paddingVertical: S.xxs,
     alignSelf: 'flex-start',
   },
-  tagText: { fontSize: 12, fontWeight: '700' },
-  label: { color: C.muted, fontSize: 13, fontWeight: '600' },
+  tagText: { ...T.caption, fontWeight: '700' },
+  label: { ...T.label, color: C.muted },
   input: {
     backgroundColor: C.surface2,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
+    ...T.input,
     color: C.text,
-    fontSize: 16,
     paddingHorizontal: S.md,
     paddingVertical: S.md,
     minHeight: 48,
   },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: {
-    color: C.muted,
-    fontSize: 13,
+    ...T.label,
     fontWeight: '700',
+    color: C.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: S.sm },
-  emptyTitle: { color: C.text, fontSize: 16, fontWeight: '600' },
-  emptySub: { color: C.muted, fontSize: 14, textAlign: 'center', maxWidth: 280 },
+  empty: { alignItems: 'center', paddingVertical: S.xxl, gap: S.sm },
+  emptyTitle: { ...T.input, fontWeight: '600', color: C.text },
+  emptySub: { ...T.small, color: C.muted, textAlign: 'center', maxWidth: 280 },
   aviso: {
     flexDirection: 'row',
     gap: S.sm,
@@ -258,11 +260,12 @@ export const st = StyleSheet.create({
     padding: S.md,
     backgroundColor: C.surface,
   },
-  avisoText: { color: C.text, fontSize: 14, flex: 1, lineHeight: 20 },
-  h1: { color: C.text, fontSize: 28, fontWeight: '800' },
-  h2: { color: C.text, fontSize: 18, fontWeight: '700' },
-  muted: { color: C.muted, fontSize: 14 },
-  body: { color: C.text, fontSize: 15 },
+  avisoText: { ...T.small, color: C.text, flex: 1, lineHeight: 20 },
+  h1: { ...T.h1, color: C.text },
+  h2: { ...T.h2, color: C.text },
+  muted: { ...T.small, color: C.muted },
+  body: { ...T.body, color: C.text },
+  dica: { ...T.label, fontWeight: '400', color: C.muted, lineHeight: 18 },
   screen: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: S.lg, gap: S.xl, paddingBottom: 120 },
 });

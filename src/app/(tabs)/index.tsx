@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Empty, StatusTag, Tag, st } from '@/components/ui';
-import { C, R, S } from '@/constants/theme';
+import { C, R, S, T, TOQUE } from '@/constants/theme';
 import {
   buscarCliente,
   buscarServico,
@@ -16,11 +16,16 @@ import {
 import { addDias, diaDoMes, diaSemanaCurto, hoje, mesCurto, rotuloDia } from '@/lib/datas';
 import { useStore } from '@/store/store';
 
+/** Largura de cada dia na faixa + espaçamento entre eles. */
+const DIA_LARGURA = 56;
+const DIA_GAP = S.sm;
+const DIAS_ANTES = 3;
+
 export default function AgendaScreen() {
   const { state } = useStore();
   const insets = useSafeAreaInsets();
   const [dia, setDia] = useState(hoje());
-  const dias = Array.from({ length: 21 }, (_, i) => addDias(hoje(), i - 3));
+  const dias = Array.from({ length: 21 }, (_, i) => addDias(hoje(), i - DIAS_ANTES));
 
   const doDia = state.agendamentos
     .filter((a) => a.data === dia)
@@ -39,7 +44,12 @@ export default function AgendaScreen() {
           <Text style={st.h1}>{rotuloDia(dia)}</Text>
         </View>
         {dia !== hoje() && (
-          <Pressable onPress={() => setDia(hoje())} style={styles.hojeBtn}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para hoje"
+            onPress={() => setDia(hoje())}
+            hitSlop={S.sm}
+            style={({ pressed }) => [styles.hojeBtn, pressed && st.pressed]}>
             <Text style={styles.hojeTxt}>Hoje</Text>
           </Pressable>
         )}
@@ -49,12 +59,17 @@ export default function AgendaScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dias}
-        contentOffset={{ x: 3 * 64 - S.lg, y: 0 }}>
+        contentOffset={{ x: DIAS_ANTES * (DIA_LARGURA + DIA_GAP), y: 0 }}>
         {dias.map((d) => {
           const sel = d === dia;
           const n = contagem(d);
           return (
-            <Pressable key={d} onPress={() => setDia(d)} style={[styles.dia, sel && styles.diaSel]}>
+            <Pressable
+              key={d}
+              accessibilityRole="button"
+              accessibilityState={{ selected: sel }}
+              onPress={() => setDia(d)}
+              style={[styles.dia, sel && styles.diaSel]}>
               <Text style={[styles.diaSemana, sel && styles.diaTxtSel]}>{diaSemanaCurto(d)}</Text>
               <Text style={[styles.diaNum, sel && styles.diaTxtSel]}>{diaDoMes(d)}</Text>
               <Text style={[styles.diaMes, sel && styles.diaTxtSel]}>
@@ -91,7 +106,7 @@ export default function AgendaScreen() {
                 onPress={() => router.push(`/agendamento/${a.id}`)}
                 style={[styles.item, apagado && { opacity: 0.5 }]}>
                 <Text style={styles.hora}>{a.hora}</Text>
-                <View style={{ flex: 1, gap: 6 }}>
+                <View style={{ flex: 1, gap: S.sm }}>
                   <Text style={st.h2} numberOfLines={1}>
                     {cliente?.nome ?? 'Cliente removido'}
                   </Text>
@@ -150,23 +165,24 @@ const styles = StyleSheet.create({
     borderColor: C.accent,
     borderRadius: R.pill,
     paddingHorizontal: S.md,
-    paddingVertical: 6,
-    marginBottom: 4,
+    minHeight: TOQUE - S.xs,
+    justifyContent: 'center',
+    marginBottom: S.xxs,
   },
-  hojeTxt: { color: C.accent, fontWeight: '700' },
-  dias: { paddingHorizontal: S.lg, paddingVertical: S.sm, gap: S.sm },
+  hojeTxt: { ...T.body, color: C.accent, fontWeight: '700' },
+  dias: { paddingHorizontal: S.lg, paddingVertical: S.sm, gap: DIA_GAP },
   dia: {
-    width: 56,
+    width: DIA_LARGURA,
     paddingVertical: S.sm,
     borderRadius: R.md,
     backgroundColor: C.surface,
     alignItems: 'center',
-    gap: 2,
+    gap: S.xxs,
   },
   diaSel: { backgroundColor: C.accent },
-  diaSemana: { color: C.muted, fontSize: 12, fontWeight: '600' },
-  diaNum: { color: C.text, fontSize: 20, fontWeight: '800' },
-  diaMes: { color: C.muted, fontSize: 11 },
+  diaSemana: { ...T.caption, color: C.muted },
+  diaNum: { ...T.title, color: C.text },
+  diaMes: { ...T.micro, color: C.muted },
   diaTxtSel: { color: C.accentText },
   resumo: { flexDirection: 'row', gap: S.sm },
   resumoItem: {
@@ -174,24 +190,24 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderRadius: R.md,
     padding: S.md,
-    gap: 2,
+    gap: S.xxs,
   },
-  resumoValor: { color: C.text, fontSize: 20, fontWeight: '800' },
+  resumoValor: { ...T.title, color: C.text },
   item: { flexDirection: 'row', alignItems: 'center', gap: S.md },
-  hora: { color: C.accent, fontSize: 20, fontWeight: '800', width: 60 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  hora: { ...T.title, color: C.accent, width: 60 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: S.xs },
   fab: {
     position: 'absolute',
     right: S.lg,
     bottom: S.lg,
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: R.pill,
     backgroundColor: C.accent,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: C.shadow,
     shadowOpacity: 0.4,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

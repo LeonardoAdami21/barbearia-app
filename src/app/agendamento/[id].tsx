@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Btn, Card, Empty, Section, StatusTag, st } from '@/components/ui';
-import { C, S } from '@/constants/theme';
+import { C, S, T } from '@/constants/theme';
 import {
   buscarCliente,
   buscarServico,
@@ -102,7 +102,7 @@ export default function DetalheAgendamento() {
             variant="secondary"
             onPress={() => enviar('lembrete')}
           />
-          <Text style={styles.nota}>
+          <Text style={st.dica}>
             {ag.confirmacaoEnviada ? '✓ Confirmação enviada. ' : ''}
             {ag.lembreteEnviado ? '✓ Lembrete enviado. ' : ''}
             O WhatsApp abre com a mensagem pronta; é só tocar em enviar.
@@ -158,8 +158,7 @@ export default function DetalheAgendamento() {
 
 const styles = StyleSheet.create({
   topo: { flexDirection: 'row', alignItems: 'flex-start' },
-  hora: { color: C.accent, fontSize: 36, fontWeight: '800' },
+  hora: { ...T.display, color: C.accent },
   linha: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   cliente: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface2 },
-  nota: { color: C.muted, fontSize: 13, lineHeight: 18 },
 });
