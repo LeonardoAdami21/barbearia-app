@@ -1,56 +1,60 @@
-# Welcome to your Expo app 👋
+# Barbearia — agendamento com WhatsApp e controle de faltas
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile-first em Expo (SDK 58, Expo Router). Por enquanto os dados ficam salvos no aparelho (AsyncStorage); o backend vem depois.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Como rodar
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Escaneie o QR code com o app **Expo Go** no celular. Para ver no navegador: `npm run web`.
 
-### Other setup steps
+## Ligar ao seu projeto EAS
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+O `eas init` precisa do seu login na Expo, então rode na sua máquina:
 
-## Learn more
+```bash
+npm install --global eas-cli
+eas login
+eas init --id 06e2a8d1-5f2e-455e-bc9c-b3902a2a57a5
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Isso grava o `projectId` no `app.json`. Depois, para gerar um APK de teste: `eas build -p android --profile preview`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## O que já funciona
 
-## Join the community
+- **Agenda**: dias em faixa horizontal, resumo do dia (horários, confirmados, faturamento previsto) e aviso de horários que já passaram sem marcar presença.
+- **Novo agendamento**: busca ou cadastro rápido de cliente, serviço, dia e grade de horários que bloqueia conflitos pela duração do serviço.
+- **WhatsApp**: botões de confirmação e lembrete que abrem o WhatsApp com a mensagem pronta (modelos editáveis em Ajustes).
+- **Controle de faltas**: marcar compareceu/faltou/cancelado; o cliente que passa do limite de faltas recebe alerta ("pedir sinal") na agenda, no agendamento e na ficha.
+- **Clientes**: busca, filtro de quem tem faltas, ficha com visitas, faltas, % de presença e histórico.
+- **Ajustes**: nome da barbearia, horário de funcionamento, intervalo da grade, limite de faltas, serviços e mensagens.
 
-Join our community of developers creating universal apps.
+## Estrutura
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+src/
+  app/                    telas (Expo Router)
+    (tabs)/index.tsx      Agenda
+    (tabs)/clientes.tsx   Clientes
+    (tabs)/ajustes.tsx    Ajustes
+    agendamento/novo.tsx  Novo agendamento
+    agendamento/[id].tsx  Detalhe + WhatsApp + presença/falta
+    cliente/novo.tsx      Novo cliente
+    cliente/[id].tsx      Ficha do cliente
+  components/ui.tsx       botões, cards, chips, campos
+  constants/theme.ts      cores e status
+  lib/                    datas, horários livres, WhatsApp, diálogos
+  store/                  estado global + AsyncStorage + dados de exemplo
+  types.ts                Cliente, Servico, Agendamento, Config
+```
+
+## Próximos passos (backend)
+
+1. Trocar o `store/store.tsx` por chamadas à API (Supabase ou Firebase), mantendo os mesmos tipos de `types.ts`.
+2. Envio **automático** de confirmação e lembrete (ex.: 24h e 2h antes) pela API oficial do WhatsApp Business. Hoje o envio é manual: o app abre o WhatsApp com o texto pronto.
+3. Login do barbeiro e mais de um profissional por barbearia.
+4. Link público para o cliente agendar sozinho.
+5. Sinal via Pix para clientes acima do limite de faltas.
