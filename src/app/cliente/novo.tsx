@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
-import { Btn, Field, st } from '@/components/ui';
+import { Btn, FECHAR_TECLADO, Field, st } from '@/components/ui';
 import { avisar } from '@/lib/confirmar';
 import { normalizarTelefone, telefoneValido } from '@/lib/whatsapp';
 import { novoId, useStore } from '@/store/store';
 
 export default function NovoCliente() {
   const { state, dispatch } = useStore();
+  const headerHeight = useHeaderHeight();
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [obs, setObs] = useState('');
@@ -32,8 +34,8 @@ export default function NovoCliente() {
   }
 
   return (
-    <KeyboardAvoidingView style={st.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={st.screen} behavior="padding" keyboardVerticalOffset={headerHeight}>
+      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome do cliente" autoFocus />
         <Field label="WhatsApp" value={telefone} onChangeText={setTelefone} placeholder="(27) 99999-9999" keyboardType="phone-pad" />
         <Field label="Observações (opcional)" value={obs} onChangeText={setObs} placeholder="Preferências de corte, alergias…" multiline />

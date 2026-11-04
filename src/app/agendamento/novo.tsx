@@ -1,9 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Aviso, Btn, Card, Chip, Empty, Field, Section, st } from '@/components/ui';
+import { Aviso, Btn, Card, Chip, Empty, FECHAR_TECLADO, Field, Section, st } from '@/components/ui';
 import { C, S } from '@/constants/theme';
+import { colunas, useLayout } from '@/hooks/useLayout';
 import { buscarCliente, estatisticasCliente, formatarPreco, horariosDoDia } from '@/lib/agenda';
 import { avisar } from '@/lib/confirmar';
 import { addDias, hoje, rotuloDia } from '@/lib/datas';
@@ -13,6 +15,9 @@ import { novoId, useStore } from '@/store/store';
 export default function NovoAgendamento() {
   const params = useLocalSearchParams<{ data?: string; clienteId?: string }>();
   const { state, dispatch } = useStore();
+  const headerHeight = useHeaderHeight();
+  const { conteudo } = useLayout();
+  const larguraHora = colunas(conteudo, 72, S.sm).item;
 
   const dataInicial = params.data && params.data >= hoje() ? params.data : hoje();
   const [clienteId, setClienteId] = useState(params.clienteId ?? '');
@@ -83,8 +88,8 @@ export default function NovoAgendamento() {
   }
 
   return (
-    <KeyboardAvoidingView style={st.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={st.screen} behavior="padding" keyboardVerticalOffset={headerHeight}>
+      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
         <Section title="Cliente">
           {cliente ? (
             <Card style={styles.clienteSel}>
@@ -165,7 +170,7 @@ export default function NovoAgendamento() {
                   selected={h.hora === hora}
                   disabled={!h.livre}
                   onPress={() => setHora(h.hora)}
-                  style={styles.horaChip}
+                  style={{ width: larguraHora }}
                 />
               ))}
             </View>
@@ -185,5 +190,4 @@ export default function NovoAgendamento() {
 const styles = StyleSheet.create({
   clienteSel: { flexDirection: 'row', alignItems: 'center' },
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
-  horaChip: { width: 76 },
 });

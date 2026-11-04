@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Empty, Tag, st } from '@/components/ui';
+import { CORTAR_RIPPLE, Card, Empty, FECHAR_TECLADO, RIPPLE, RIPPLE_ESCURO, Tag, st } from '@/components/ui';
 import { C, R, S, T, TOQUE } from '@/constants/theme';
 import { estatisticasCliente, plural } from '@/lib/agenda';
 import { formatarTelefone } from '@/lib/whatsapp';
@@ -30,20 +30,22 @@ export default function ClientesScreen() {
 
   return (
     <View style={[st.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, st.limite]}>
         <View style={{ flex: 1 }}>
           <Text style={st.muted}>{state.clientes.length} cadastrados</Text>
           <Text style={st.h1}>Clientes</Text>
         </View>
         <Pressable
           accessibilityLabel="Novo cliente"
+          accessibilityRole="button"
+          android_ripple={RIPPLE_ESCURO}
           onPress={() => router.push('/cliente/novo')}
           style={({ pressed }) => [styles.add, pressed && st.pressed]}>
           <Ionicons name="person-add" size={20} color={C.accentText} />
         </Pressable>
       </View>
 
-      <View style={styles.filtros}>
+      <View style={[styles.filtros, st.limite]}>
         <View style={styles.busca}>
           <Ionicons name="search" size={18} color={C.muted} />
           <TextInput
@@ -51,6 +53,10 @@ export default function ClientesScreen() {
             onChangeText={setBusca}
             placeholder="Buscar nome ou telefone"
             placeholderTextColor={C.placeholder}
+            selectionColor={C.accent}
+            cursorColor={C.accent}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
             style={styles.buscaInput}
           />
         </View>
@@ -60,6 +66,7 @@ export default function ClientesScreen() {
             accessibilityState={{ selected: soAlerta }}
             onPress={() => setSoAlerta(!soAlerta)}
             hitSlop={S.sm}
+            android_ripple={RIPPLE}
             style={({ pressed }) => [styles.filtro, soAlerta && styles.filtroOn, pressed && st.pressed]}>
             <Text style={[styles.filtroTxt, soAlerta && { color: C.onDanger }]}>
               Com faltas ({comAlerta})
@@ -68,7 +75,7 @@ export default function ClientesScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={[st.scroll, { gap: S.sm }]} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[st.scroll, { gap: S.sm }]} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
         {lista.length === 0 ? (
           <Empty
             icon="people-outline"
@@ -99,7 +106,7 @@ export default function ClientesScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.sm },
-  add: { width: TOQUE, height: TOQUE, borderRadius: R.pill, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  add: { width: TOQUE, height: TOQUE, borderRadius: R.pill, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...CORTAR_RIPPLE },
   filtros: { paddingHorizontal: S.lg, gap: S.sm, paddingBottom: S.sm },
   busca: {
     flexDirection: 'row',
@@ -110,7 +117,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: S.md,
   },
   buscaInput: { ...T.input, flex: 1, color: C.text, minHeight: TOQUE + S.xxs },
-  filtro: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.danger, borderRadius: R.pill, paddingHorizontal: S.md, minHeight: TOQUE - S.xs, justifyContent: 'center' },
+  filtro: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.danger, borderRadius: R.pill, paddingHorizontal: S.md, minHeight: TOQUE - S.xs, justifyContent: 'center', ...CORTAR_RIPPLE },
   filtroOn: { backgroundColor: C.danger },
   filtroTxt: { ...T.label, fontWeight: '700', color: C.danger },
   item: { flexDirection: 'row', alignItems: 'center', gap: S.md },

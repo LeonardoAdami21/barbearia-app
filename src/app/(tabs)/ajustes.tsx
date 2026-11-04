@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Btn, Card, Field, Section, st } from '@/components/ui';
+import { Btn, Card, FECHAR_TECLADO, Field, RIPPLE_ICONE, Section, st } from '@/components/ui';
 import { C, S } from '@/constants/theme';
+import { useLayout } from '@/hooks/useLayout';
 import { formatarPreco } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
 import { horaParaMin, horaValida } from '@/lib/datas';
@@ -14,6 +15,11 @@ import { novoId, useStore } from '@/store/store';
 export default function AjustesScreen() {
   const { state, dispatch } = useStore();
   const insets = useSafeAreaInsets();
+  const { compacto, fonteGrande } = useLayout();
+  /** Em telas estreitas ou com fonte grande, os pares de campos ficam um embaixo do outro. */
+  const empilhar = compacto || fonteGrande;
+  const linha = empilhar ? styles.coluna : styles.linha;
+  const metade = empilhar ? undefined : styles.metade;
   const cfg = state.config;
 
   const [nomeBarbearia, setNomeBarbearia] = useState(cfg.nomeBarbearia);
@@ -79,26 +85,26 @@ export default function AjustesScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={[st.screen, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={[st.screen, { paddingTop: insets.top }]} behavior="padding">
+      <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
         <Text style={st.h1}>Ajustes</Text>
 
         <Section title="Barbearia">
           <Card style={{ gap: S.md }}>
             <Field label="Nome" value={nomeBarbearia} onChangeText={setNomeBarbearia} />
-            <View style={styles.linha}>
-              <View style={{ flex: 1 }}>
+            <View style={linha}>
+              <View style={metade}>
                 <Field label="Abre às" value={abertura} onChangeText={setAbertura} placeholder="09:00" maxLength={5} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={metade}>
                 <Field label="Fecha às" value={fechamento} onChangeText={setFechamento} placeholder="19:00" maxLength={5} />
               </View>
             </View>
-            <View style={styles.linha}>
-              <View style={{ flex: 1 }}>
+            <View style={linha}>
+              <View style={metade}>
                 <Field label="Intervalo (min)" value={intervalo} onChangeText={setIntervalo} keyboardType="number-pad" />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={metade}>
                 <Field label="Alerta a partir de (faltas)" value={limite} onChangeText={setLimite} keyboardType="number-pad" />
               </View>
             </View>
@@ -124,18 +130,18 @@ export default function AjustesScreen() {
                 <Text style={st.body}>{s.nome}</Text>
                 <Text style={st.muted}>{s.duracaoMin} min · {formatarPreco(s.preco)}</Text>
               </View>
-              <Pressable accessibilityLabel={`Remover ${s.nome}`} onPress={() => removerServico(s.id, s.nome)} hitSlop={12}>
+              <Pressable accessibilityLabel={`Remover ${s.nome}`} onPress={() => removerServico(s.id, s.nome)} hitSlop={12} android_ripple={RIPPLE_ICONE}>
                 <Ionicons name="trash-outline" size={20} color={C.muted} />
               </Pressable>
             </Card>
           ))}
           <Card style={{ gap: S.md }}>
             <Field label="Novo serviço" value={svNome} onChangeText={setSvNome} placeholder="Ex.: Pigmentação" />
-            <View style={styles.linha}>
-              <View style={{ flex: 1 }}>
+            <View style={linha}>
+              <View style={metade}>
                 <Field label="Duração (min)" value={svDuracao} onChangeText={setSvDuracao} keyboardType="number-pad" />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={metade}>
                 <Field label="Preço (R$)" value={svPreco} onChangeText={setSvPreco} keyboardType="decimal-pad" placeholder="45,00" />
               </View>
             </View>
@@ -156,6 +162,8 @@ export default function AjustesScreen() {
 }
 
 const styles = StyleSheet.create({
-  linha: { flexDirection: 'row', gap: S.md },
+  linha: { flexDirection: 'row', alignItems: 'flex-end', gap: S.md },
+  coluna: { gap: S.md },
+  metade: { flex: 1 },
   servico: { flexDirection: 'row', alignItems: 'center', paddingVertical: S.md },
 });

@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps, ReactNode } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,10 +12,23 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { C, R, S, STATUS, T, TOQUE } from '@/constants/theme';
+import { C, LARGURA_MAX, R, S, STATUS, T, TOQUE } from '@/constants/theme';
 import type { Status } from '@/types';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
+
+/**
+ * Feedback de toque nativo: ripple no Android, opacidade no iOS (ver `st.pressed`).
+ * Use `RIPPLE_ESCURO` sobre fundos claros (dourado, verde do WhatsApp).
+ */
+export const RIPPLE = Platform.OS === 'android' ? { color: 'rgba(255,255,255,0.12)' } : undefined;
+export const RIPPLE_ESCURO = Platform.OS === 'android' ? { color: 'rgba(0,0,0,0.18)' } : undefined;
+/** Ripple sem borda para botões só de ícone. */
+export const RIPPLE_ICONE =
+  Platform.OS === 'android' ? { color: 'rgba(255,255,255,0.16)', borderless: true, radius: 22 } : undefined;
+
+/** iOS: arrastar a lista fecha o teclado acompanhando o dedo. Android: fecha ao arrastar. */
+export const FECHAR_TECLADO = Platform.OS === 'ios' ? 'interactive' : 'on-drag';
 
 export function Card({
   children,
@@ -27,19 +41,19 @@ export function Card({
 }) {
   if (!onPress) return <View style={[st.card, style]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [st.card, style, pressed && st.pressed]}>
+    <Pressable android_ripple={RIPPLE} onPress={onPress} style={({ pressed }) => [st.card, style, pressed && st.pressed]}>
       {children}
     </Pressable>
   );
 }
 
 const VARIANTES = {
-  primary: { bg: C.accent, fg: C.accentText, borda: C.accent },
-  secondary: { bg: C.surface2, fg: C.text, borda: C.border },
-  success: { bg: 'transparent', fg: C.success, borda: C.success },
-  danger: { bg: 'transparent', fg: C.danger, borda: C.danger },
-  whatsapp: { bg: C.whatsapp, fg: C.onWhatsapp, borda: C.whatsapp },
-  ghost: { bg: 'transparent', fg: C.muted, borda: 'transparent' },
+  primary: { bg: C.accent, fg: C.accentText, borda: C.accent, ripple: RIPPLE_ESCURO },
+  secondary: { bg: C.surface2, fg: C.text, borda: C.border, ripple: RIPPLE },
+  success: { bg: 'transparent', fg: C.success, borda: C.success, ripple: RIPPLE },
+  danger: { bg: 'transparent', fg: C.danger, borda: C.danger, ripple: RIPPLE },
+  whatsapp: { bg: C.whatsapp, fg: C.onWhatsapp, borda: C.whatsapp, ripple: RIPPLE_ESCURO },
+  ghost: { bg: 'transparent', fg: C.muted, borda: 'transparent', ripple: RIPPLE },
 } as const;
 
 export function Btn({
@@ -61,6 +75,8 @@ export function Btn({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      android_ripple={v.ripple}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
@@ -71,7 +87,9 @@ export function Btn({
         style,
       ]}>
       {icon && <Ionicons name={icon} size={18} color={v.fg} />}
-      <Text style={[st.btnText, { color: v.fg }]}>{label}</Text>
+      <Text style={[st.btnText, { color: v.fg }]} maxFontSizeMultiplier={1.4}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -95,6 +113,7 @@ export function Chip({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+      android_ripple={selected ? RIPPLE_ESCURO : RIPPLE}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
@@ -134,6 +153,8 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
       <Text style={st.label}>{label}</Text>
       <TextInput
         placeholderTextColor={C.placeholder}
+        selectionColor={C.accent}
+        cursorColor={C.accent}
         style={[st.input, props.multiline && { minHeight: 130, textAlignVertical: 'top' }, style]}
         {...props}
       />
@@ -180,6 +201,9 @@ export function Aviso({ icon = 'alert-circle', cor = C.warning, children }: { ic
   );
 }
 
+/** No Android o ripple só respeita o canto arredondado com overflow hidden. No iOS isso cortaria sombras. */
+export const CORTAR_RIPPLE = Platform.select<ViewStyle>({ android: { overflow: 'hidden' }, default: {} });
+
 export const st = StyleSheet.create({
   card: {
     backgroundColor: C.surface,
@@ -187,20 +211,24 @@ export const st = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
     padding: S.lg,
+    ...CORTAR_RIPPLE,
   },
-  pressed: { opacity: 0.75 },
+  /** No Android o ripple já dá o feedback; a opacidade fica só no iOS. */
+  pressed: Platform.OS === 'android' ? {} : { opacity: 0.75 },
   disabled: { opacity: 0.4 },
   btn: {
     minHeight: 48,
     borderRadius: R.md,
     borderWidth: 1.5,
     paddingHorizontal: S.lg,
+    paddingVertical: S.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: S.sm,
+    ...CORTAR_RIPPLE,
   },
-  btnText: T.button,
+  btnText: { ...T.button, flexShrink: 1, textAlign: 'center' },
   chip: {
     minHeight: TOQUE,
     paddingHorizontal: S.md,
@@ -211,6 +239,7 @@ export const st = StyleSheet.create({
     borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
+    ...CORTAR_RIPPLE,
   },
   chipSel: { backgroundColor: C.accent, borderColor: C.accent },
   chipOff: { opacity: 0.45 },
@@ -267,5 +296,15 @@ export const st = StyleSheet.create({
   body: { ...T.body, color: C.text },
   dica: { ...T.label, fontWeight: '400', color: C.muted, lineHeight: 18 },
   screen: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: S.lg, gap: S.xl, paddingBottom: 120 },
+  /** Conteúdo rolável: ocupa a largura toda no celular e fica centralizado em telas largas. */
+  scroll: {
+    padding: S.lg,
+    gap: S.xl,
+    paddingBottom: 120,
+    width: '100%',
+    maxWidth: LARGURA_MAX,
+    alignSelf: 'center',
+  },
+  /** Mesmo limite de largura para cabeçalhos e barras fixas fora do scroll. */
+  limite: { width: '100%', maxWidth: LARGURA_MAX, alignSelf: 'center' },
 });
