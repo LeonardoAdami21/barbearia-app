@@ -36,12 +36,16 @@ export const STATUS: Record<Status, { label: string; cor: string }> = {
 export const S = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 40 } as const;
 export const R = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
 
-/** Escala tipográfica. Combine com uma cor: `[T.body, { color: C.text }]`. */
+/**
+ * Escala tipográfica. Combine com uma cor: `[T.body, { color: C.text }]`.
+ * `includeFontPadding: false` tira o espaço extra que o Android põe acima e abaixo
+ * do texto, deixando títulos e números grandes alinhados como no iOS (no iOS é ignorado).
+ */
 export const T = {
-  display: { fontSize: 36, fontWeight: '800' },
-  h1: { fontSize: 28, fontWeight: '800' },
-  stat: { fontSize: 24, fontWeight: '800' },
-  title: { fontSize: 20, fontWeight: '800' },
+  display: { fontSize: 36, fontWeight: '800', includeFontPadding: false },
+  h1: { fontSize: 28, fontWeight: '800', includeFontPadding: false },
+  stat: { fontSize: 24, fontWeight: '800', includeFontPadding: false },
+  title: { fontSize: 20, fontWeight: '800', includeFontPadding: false },
   h2: { fontSize: 18, fontWeight: '700' },
   button: { fontSize: 16, fontWeight: '700' },
   input: { fontSize: 16 },
@@ -52,6 +56,9 @@ export const T = {
   caption: { fontSize: 12, fontWeight: '600' },
   micro: { fontSize: 11 },
 } as const satisfies Record<string, TextStyle>;
+
+/** Largura máxima do conteúdo, para não esticar em tablets e celulares deitados. */
+export const LARGURA_MAX = 640;
 
 /** Altura mínima de áreas tocáveis. */
 export const TOQUE = 44;
