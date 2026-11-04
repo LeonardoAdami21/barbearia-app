@@ -107,7 +107,7 @@ export default function AjustesScreen() {
 
         <Section title="Mensagens do WhatsApp">
           <Card style={{ gap: S.md }}>
-            <Text style={styles.dica}>
+            <Text style={st.dica}>
               Use {'{nome}'}, {'{data}'}, {'{hora}'}, {'{servico}'} e {'{barbearia}'} para preencher automaticamente.
             </Text>
             <Field label="Confirmação" value={msgConfirmacao} onChangeText={setMsgConfirmacao} multiline />
@@ -144,7 +144,7 @@ export default function AjustesScreen() {
         </Section>
 
         <Section title="Dados">
-          <Text style={styles.dica}>
+          <Text style={st.dica}>
             Por enquanto os dados ficam salvos só neste aparelho. Com o backend, eles passam a ficar na nuvem.
           </Text>
           <Btn label="Carregar dados de exemplo" icon="sparkles-outline" variant="secondary" onPress={() => recarregar('exemplo')} />
@@ -157,6 +157,5 @@ export default function AjustesScreen() {
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', gap: S.md },
-  dica: { color: C.muted, fontSize: 13, lineHeight: 18 },
   servico: { flexDirection: 'row', alignItems: 'center', paddingVertical: S.md },
 });

@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Empty, Tag, st } from '@/components/ui';
-import { C, R, S } from '@/constants/theme';
+import { C, R, S, T, TOQUE } from '@/constants/theme';
 import { estatisticasCliente, plural } from '@/lib/agenda';
 import { formatarTelefone } from '@/lib/whatsapp';
 import { useStore } from '@/store/store';
@@ -50,13 +50,18 @@ export default function ClientesScreen() {
             value={busca}
             onChangeText={setBusca}
             placeholder="Buscar nome ou telefone"
-            placeholderTextColor="#6E6A63"
+            placeholderTextColor={C.placeholder}
             style={styles.buscaInput}
           />
         </View>
         {comAlerta > 0 && (
-          <Pressable onPress={() => setSoAlerta(!soAlerta)} style={[styles.filtro, soAlerta && styles.filtroOn]}>
-            <Text style={[styles.filtroTxt, soAlerta && { color: '#fff' }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: soAlerta }}
+            onPress={() => setSoAlerta(!soAlerta)}
+            hitSlop={S.sm}
+            style={({ pressed }) => [styles.filtro, soAlerta && styles.filtroOn, pressed && st.pressed]}>
+            <Text style={[styles.filtroTxt, soAlerta && { color: C.onDanger }]}>
               Com faltas ({comAlerta})
             </Text>
           </Pressable>
@@ -76,7 +81,7 @@ export default function ClientesScreen() {
               <View style={styles.avatar}>
                 <Text style={styles.avatarTxt}>{c.nome.charAt(0).toUpperCase()}</Text>
               </View>
-              <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flex: 1, gap: S.xs }}>
                 <Text style={st.h2} numberOfLines={1}>{c.nome}</Text>
                 <Text style={st.muted}>
                   {formatarTelefone(c.telefone)} · {plural(stats.visitas, 'visita', 'visitas')}
@@ -94,7 +99,7 @@ export default function ClientesScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.sm },
-  add: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  add: { width: TOQUE, height: TOQUE, borderRadius: R.pill, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   filtros: { paddingHorizontal: S.lg, gap: S.sm, paddingBottom: S.sm },
   busca: {
     flexDirection: 'row',
@@ -104,11 +109,11 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     paddingHorizontal: S.md,
   },
-  buscaInput: { flex: 1, color: C.text, fontSize: 16, minHeight: 46 },
-  filtro: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.danger, borderRadius: R.pill, paddingHorizontal: S.md, paddingVertical: 6 },
+  buscaInput: { ...T.input, flex: 1, color: C.text, minHeight: TOQUE + S.xxs },
+  filtro: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.danger, borderRadius: R.pill, paddingHorizontal: S.md, minHeight: TOQUE - S.xs, justifyContent: 'center' },
   filtroOn: { backgroundColor: C.danger },
-  filtroTxt: { color: C.danger, fontWeight: '700', fontSize: 13 },
+  filtroTxt: { ...T.label, fontWeight: '700', color: C.danger },
   item: { flexDirection: 'row', alignItems: 'center', gap: S.md },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: C.accent, fontSize: 18, fontWeight: '800' },
+  avatar: { width: TOQUE, height: TOQUE, borderRadius: R.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { ...T.h2, fontWeight: '800', color: C.accent },
 });
