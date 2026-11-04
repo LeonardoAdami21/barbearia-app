@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Btn, Card, Empty, Field, Section, StatusTag, st } from '@/components/ui';
-import { C, R, S } from '@/constants/theme';
+import { C, R, S, T } from '@/constants/theme';
 import { buscarServico, estatisticasCliente } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
 import { rotuloDia } from '@/lib/datas';
@@ -124,6 +124,6 @@ function Numero({ valor, rotulo, cor }: { valor: string; rotulo: string; cor?: s
 const styles = StyleSheet.create({
   stats: { flexDirection: 'row', gap: S.sm },
   num: { flex: 1, backgroundColor: C.surface, borderRadius: R.md, padding: S.md, alignItems: 'center' },
-  numValor: { color: C.text, fontSize: 24, fontWeight: '800' },
+  numValor: { ...T.stat, color: C.text },
   hist: { flexDirection: 'row', alignItems: 'center', paddingVertical: S.md },
 });
