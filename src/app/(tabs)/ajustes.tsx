@@ -1,19 +1,22 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Btn, Card, FECHAR_TECLADO, Field, RIPPLE_ICONE, Section, st } from '@/components/ui';
-import { C, S } from '@/constants/theme';
+import { Btn, Card, FECHAR_TECLADO, Field, RIPPLE_ICONE, Section, Tag, st } from '@/components/ui';
+import { C, R, S } from '@/constants/theme';
 import { useLayout } from '@/hooks/useLayout';
 import { formatarPreco } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
 import { horaParaMin, horaValida } from '@/lib/datas';
+import { useAuth } from '@/providers/auth-provider';
 import { estadoExemplo, estadoVazio } from '@/store/seed';
 import { novoId, useStore } from '@/store/store';
 
 export default function AjustesScreen() {
   const { state, dispatch } = useStore();
+  const { usuario, sair } = useAuth();
   const insets = useSafeAreaInsets();
   const { compacto, fonteGrande } = useLayout();
   /** Em telas estreitas ou com fonte grande, os pares de campos ficam um embaixo do outro. */
@@ -89,6 +92,39 @@ export default function AjustesScreen() {
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
         <Text style={st.h1}>Ajustes</Text>
 
+        <Section title="Conta">
+          <Card style={styles.conta}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={20} color={C.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={st.body} numberOfLines={1}>
+                {usuario?.name ?? 'Sem conexão'}
+              </Text>
+              <Text style={st.muted} numberOfLines={1}>
+                {usuario?.email ?? 'Os dados da conta aparecem quando houver internet.'}
+              </Text>
+            </View>
+          </Card>
+          <Card onPress={() => router.push('/conta/seguranca')} style={styles.conta}>
+            <Ionicons name="shield-checkmark-outline" size={22} color={C.muted} />
+            <Text style={[st.body, { flex: 1 }]}>Verificação em duas etapas</Text>
+            {usuario ? (
+              <Tag
+                label={usuario.twoFactorEnabled ? 'Ativa' : 'Desativada'}
+                cor={usuario.twoFactorEnabled ? C.success : C.muted}
+              />
+            ) : null}
+            <Ionicons name="chevron-forward" size={20} color={C.muted} />
+          </Card>
+          <Btn
+            label="Sair da conta"
+            icon="log-out-outline"
+            variant="ghost"
+            onPress={() => confirmar('Sair da conta?', 'Você vai precisar entrar de novo.', () => void sair(), 'Sair')}
+          />
+        </Section>
+
         <Section title="Barbearia">
           <Card style={{ gap: S.md }}>
             <Field label="Nome" value={nomeBarbearia} onChangeText={setNomeBarbearia} />
@@ -163,6 +199,15 @@ export default function AjustesScreen() {
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', alignItems: 'flex-end', gap: S.md },
+  conta: { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: R.pill,
+    backgroundColor: C.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   coluna: { gap: S.md },
   metade: { flex: 1 },
   servico: { flexDirection: 'row', alignItems: 'center', paddingVertical: S.md },

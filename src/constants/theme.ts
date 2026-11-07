@@ -22,6 +22,9 @@ export const C = {
   whatsapp: '#25D366',
   onWhatsapp: '#06260F',
   cancelado: '#77777C',
+  /** Botão "Entrar com Google" no tema claro das diretrizes do Google. */
+  google: '#FFFFFF',
+  onGoogle: '#1F1F1F',
   shadow: '#000000',
 } as const;
 

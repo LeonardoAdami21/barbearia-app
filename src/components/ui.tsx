@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps, ReactNode } from 'react';
+import { useState, type ComponentProps, type ComponentRef, type ReactNode, type Ref } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,6 +17,8 @@ import { C, LARGURA_MAX, R, S, STATUS, T, TOQUE } from '@/constants/theme';
 import type { Status } from '@/types';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
+/** Instância de um TextInput, para `ref.current?.focus()`. */
+export type InputRef = ComponentRef<typeof TextInput>;
 
 /**
  * Feedback de toque nativo: ripple no Android, opacidade no iOS (ver `st.pressed`).
@@ -54,6 +57,7 @@ const VARIANTES = {
   danger: { bg: 'transparent', fg: C.danger, borda: C.danger, ripple: RIPPLE },
   whatsapp: { bg: C.whatsapp, fg: C.onWhatsapp, borda: C.whatsapp, ripple: RIPPLE_ESCURO },
   ghost: { bg: 'transparent', fg: C.muted, borda: 'transparent', ripple: RIPPLE },
+  google: { bg: C.google, fg: C.onGoogle, borda: C.border, ripple: RIPPLE_ESCURO },
 } as const;
 
 export function Btn({
@@ -62,6 +66,7 @@ export function Btn({
   variant = 'primary',
   icon,
   disabled,
+  loading,
   style,
 }: {
   label: string;
@@ -69,16 +74,19 @@ export function Btn({
   variant?: keyof typeof VARIANTES;
   icon?: IconName;
   disabled?: boolean;
+  /** Mostra um indicador no lugar do ícone e bloqueia novos toques. */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const v = VARIANTES[variant];
+  const bloqueado = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!bloqueado, busy: !!loading }}
       android_ripple={v.ripple}
       onPress={onPress}
-      disabled={disabled}
+      disabled={bloqueado}
       style={({ pressed }) => [
         st.btn,
         { backgroundColor: v.bg, borderColor: v.borda },
@@ -86,7 +94,11 @@ export function Btn({
         disabled && st.disabled,
         style,
       ]}>
-      {icon && <Ionicons name={icon} size={18} color={v.fg} />}
+      {loading ? (
+        <ActivityIndicator size="small" color={v.fg} />
+      ) : (
+        icon && <Ionicons name={icon} size={18} color={v.fg} />
+      )}
       <Text style={[st.btnText, { color: v.fg }]} maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
@@ -147,18 +159,62 @@ export function Tag({ label, cor, icon }: { label: string; cor: string; icon?: I
   );
 }
 
-export function Field({ label, style, ...props }: TextInputProps & { label: string }) {
+type FieldProps = TextInputProps & {
+  label: string;
+  /** Mensagem mostrada abaixo do campo, que também fica com a borda vermelha. */
+  error?: string;
+  ref?: Ref<InputRef>;
+  /** Elemento à direita, dentro do campo (ex.: botão de mostrar senha). */
+  right?: ReactNode;
+};
+
+export function Field({ label, error, style, ref, right, ...props }: FieldProps) {
   return (
     <View style={{ gap: S.xs }}>
       <Text style={st.label}>{label}</Text>
-      <TextInput
-        placeholderTextColor={C.placeholder}
-        selectionColor={C.accent}
-        cursorColor={C.accent}
-        style={[st.input, props.multiline && { minHeight: 130, textAlignVertical: 'top' }, style]}
-        {...props}
-      />
+      <View style={[st.inputBox, !!error && st.inputErro]}>
+        <TextInput
+          ref={ref}
+          placeholderTextColor={C.placeholder}
+          selectionColor={C.accent}
+          cursorColor={C.accent}
+          accessibilityLabel={label}
+          aria-invalid={!!error}
+          style={[st.input, props.multiline && { minHeight: 130, textAlignVertical: 'top' }, style]}
+          {...props}
+        />
+        {right}
+      </View>
+      {error ? (
+        <Text style={st.erro} accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
     </View>
+  );
+}
+
+/** Campo de senha com botão para mostrar/esconder o que foi digitado. */
+export function PasswordField(props: Omit<FieldProps, 'secureTextEntry' | 'right'>) {
+  const [visivel, setVisivel] = useState(false);
+  return (
+    <Field
+      autoCapitalize="none"
+      autoCorrect={false}
+      {...props}
+      secureTextEntry={!visivel}
+      right={
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={visivel ? 'Esconder senha' : 'Mostrar senha'}
+          onPress={() => setVisivel(!visivel)}
+          hitSlop={S.sm}
+          android_ripple={RIPPLE_ICONE}
+          style={st.inputAcao}>
+          <Ionicons name={visivel ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.muted} />
+        </Pressable>
+      }
+    />
   );
 }
 
@@ -258,17 +314,25 @@ export const st = StyleSheet.create({
   },
   tagText: { ...T.caption, fontWeight: '700' },
   label: { ...T.label, color: C.muted },
-  input: {
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: C.surface2,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
+  },
+  inputErro: { borderColor: C.danger },
+  input: {
+    flex: 1,
     ...T.input,
     color: C.text,
     paddingHorizontal: S.md,
     paddingVertical: S.md,
     minHeight: 48,
   },
+  inputAcao: { width: TOQUE, height: TOQUE, alignItems: 'center', justifyContent: 'center' },
+  erro: { ...T.label, fontWeight: '400', color: C.danger },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: {
     ...T.label,
