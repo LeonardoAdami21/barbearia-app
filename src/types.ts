@@ -13,6 +13,8 @@ export type Servico = {
   nome: string;
   duracaoMin: number;
   preco: number;
+  /** false = removido: some dos novos agendamentos, mas o nome continua no histórico. */
+  ativo: boolean;
 };
 
 export type Agendamento = {
@@ -25,8 +27,11 @@ export type Agendamento = {
   hora: string;
   status: Status;
   obs?: string;
-  confirmacaoEnviada?: boolean;
-  lembreteEnviado?: boolean;
+  confirmacaoEnviada: boolean;
+  lembreteEnviado: boolean;
+  /** Duração e preço do serviço no momento em que o horário foi marcado. */
+  duracaoMin: number;
+  preco: number;
   criadoEm: string;
 };
 

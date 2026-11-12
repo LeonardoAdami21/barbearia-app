@@ -14,6 +14,7 @@ import {
   precisaMarcarPresenca,
 } from '@/lib/agenda';
 import { addDias, diaDoMes, diaSemanaCurto, hoje, mesCurto, rotuloDia } from '@/lib/datas';
+import { AvisoSemConexao, useAtualizarAoPuxar } from '@/components/sincronizacao';
 import { useStore } from '@/store/store';
 
 /** Largura de cada dia na faixa + espaçamento entre eles. */
@@ -23,6 +24,7 @@ const DIAS_ANTES = 3;
 
 export default function AgendaScreen() {
   const { state } = useStore();
+  const atualizarAoPuxar = useAtualizarAoPuxar();
   const insets = useSafeAreaInsets();
   const [dia, setDia] = useState(hoje());
   const dias = Array.from({ length: 21 }, (_, i) => addDias(hoje(), i - DIAS_ANTES));
@@ -32,7 +34,8 @@ export default function AgendaScreen() {
     .sort((a, b) => a.hora.localeCompare(b.hora));
   const validos = doDia.filter((a) => a.status !== 'cancelado' && a.status !== 'faltou');
   const confirmados = doDia.filter((a) => a.status === 'confirmado').length;
-  const previsto = validos.reduce((soma, a) => soma + (buscarServico(state, a.servicoId)?.preco ?? 0), 0);
+  // Preço gravado no agendamento: mudar o preço do serviço depois não altera o que já foi marcado.
+  const previsto = validos.reduce((soma, a) => soma + a.preco, 0);
   const contagem = (iso: string) =>
     state.agendamentos.filter((a) => a.data === iso && a.status !== 'cancelado').length;
 
@@ -90,7 +93,8 @@ export default function AgendaScreen() {
         })}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={[st.scroll, { gap: S.md }]}>
+      <ScrollView contentContainerStyle={[st.scroll, { gap: S.md }]} refreshControl={atualizarAoPuxar}>
+        <AvisoSemConexao />
         <View style={styles.resumo}>
           <Resumo valor={String(validos.length)} rotulo="horários" />
           <Resumo valor={String(confirmados)} rotulo="confirmados" />
@@ -123,7 +127,7 @@ export default function AgendaScreen() {
                     {cliente?.nome ?? 'Cliente removido'}
                   </Text>
                   <Text style={st.muted}>
-                    {servico?.nome ?? 'Serviço'} · {formatarPreco(servico?.preco ?? 0)}
+                    {servico?.nome ?? 'Serviço'} · {formatarPreco(a.preco)}
                   </Text>
                   <View style={styles.tags}>
                     <StatusTag status={a.status} />

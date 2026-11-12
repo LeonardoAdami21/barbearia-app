@@ -8,11 +8,13 @@ import { buscarServico, estatisticasCliente } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
 import { rotuloDia } from '@/lib/datas';
 import { abrirWhatsApp, formatarTelefone, normalizarTelefone, telefoneValido } from '@/lib/whatsapp';
+import { mensagemDeErro } from '@/services/api';
 import { useStore } from '@/store/store';
 
 export default function DetalheCliente() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { state, dispatch } = useStore();
+  const { state, acoes } = useStore();
+  const [salvando, setSalvando] = useState(false);
   const cliente = state.clientes.find((c) => c.id === id);
   const [editando, setEditando] = useState(false);
   const [nome, setNome] = useState(cliente?.nome ?? '');
@@ -26,19 +28,23 @@ export default function DetalheCliente() {
     .filter((a) => a.clienteId === cliente.id)
     .sort((a, b) => `${b.data}${b.hora}`.localeCompare(`${a.data}${a.hora}`));
 
-  function salvar() {
+  async function salvar() {
     if (nome.trim().length < 2) return avisar('Nome', 'Informe o nome do cliente.');
     if (!telefoneValido(telefone)) return avisar('Telefone inválido', 'Use DDD + número.');
     const outro = state.clientes.find(
       (c) => c.id !== cliente!.id && normalizarTelefone(c.telefone) === normalizarTelefone(telefone),
     );
     if (outro) return avisar('Telefone já cadastrado', `Este número é de ${outro.nome}.`);
-    dispatch({
-      type: 'updateCliente',
-      id: cliente!.id,
-      patch: { nome: nome.trim(), telefone: telefone.replace(/\D/g, ''), obs: obs.trim() || undefined },
-    });
-    setEditando(false);
+    setSalvando(true);
+    try {
+      // "" apaga a observação na API.
+      await acoes.alterarCliente(cliente!.id, { nome: nome.trim(), telefone, obs: obs.trim() });
+      setEditando(false);
+    } catch (error) {
+      avisar('Não foi possível salvar', mensagemDeErro(error));
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -48,7 +54,7 @@ export default function DetalheCliente() {
           <Field label="Nome" value={nome} onChangeText={setNome} />
           <Field label="WhatsApp" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
           <Field label="Observações" value={obs} onChangeText={setObs} multiline />
-          <Btn label="Salvar" icon="checkmark" onPress={salvar} />
+          <Btn label="Salvar" icon="checkmark" loading={salvando} onPress={salvar} />
           <Btn label="Cancelar" variant="ghost" onPress={() => setEditando(false)} />
         </Card>
       ) : (
@@ -103,8 +109,9 @@ export default function DetalheCliente() {
         variant="ghost"
         onPress={() =>
           confirmar('Excluir cliente?', 'O histórico de agendamentos dele também será apagado.', () => {
-            dispatch({ type: 'removeCliente', id: cliente.id });
+            // Volta antes, para a ficha não piscar "não encontrado" quando o cliente sair do estado.
             router.back();
+            acoes.removerCliente(cliente.id).catch((error) => avisar('Não foi possível excluir', mensagemDeErro(error)));
           }, 'Excluir')
         }
       />

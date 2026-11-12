@@ -1,6 +1,6 @@
 # Barbearia — agendamento com WhatsApp e controle de faltas
 
-App mobile-first em Expo (SDK 58, Expo Router). Por enquanto os dados ficam salvos no aparelho (AsyncStorage); o backend vem depois.
+App mobile-first em Expo (SDK 58, Expo Router). Os dados ficam na conta, na **barbearia-api** (NestJS); o aparelho guarda só uma cópia para abrir rápido e consultar sem internet.
 
 ## Como rodar
 
@@ -35,7 +35,7 @@ cp .env.example .env   # ajuste EXPO_PUBLIC_API_URL para o endereço da API
 - **Login com Google**: precisa de development build (`npx expo run:android` ou `npx eas-cli@latest build --profile development`); no Expo Go o botão não aparece. Preencha `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (e, para iOS, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` e `GOOGLE_IOS_URL_SCHEME`).
 - **Verificação em duas etapas**: Ajustes → Verificação em duas etapas. Funciona com Google Authenticator, Microsoft Authenticator, Authy etc. e gera 8 códigos de recuperação.
 
-> Os clientes, agendamentos e ajustes continuam salvos só no aparelho; ainda não são separados por conta.
+> Clientes, agendamentos, serviços e ajustes ficam na conta (API). O app carrega tudo de `GET /estado` ao entrar e guarda uma cópia no aparelho: sem internet dá para consultar, mas não alterar. Puxe a Agenda ou os Clientes para baixo para atualizar.
 
 ## O que já funciona
 
@@ -61,13 +61,14 @@ src/
   components/ui.tsx       botões, cards, chips, campos
   constants/theme.ts      cores e status
   lib/                    datas, horários livres, WhatsApp, diálogos
-  store/                  estado global + AsyncStorage + dados de exemplo
+  store/                  estado global: carrega da API, cópia local (AsyncStorage) e ações
+  services/barbearia.ts   rotas da API de clientes, serviços, agendamentos e config
   types.ts                Cliente, Servico, Agendamento, Config
 ```
 
 ## Próximos passos (backend)
 
-1. Trocar o `store/store.tsx` por chamadas à API (Supabase ou Firebase), mantendo os mesmos tipos de `types.ts`.
+1. ~~Trocar o `store/store.tsx` por chamadas à API~~ (feito).
 2. Envio **automático** de confirmação e lembrete (ex.: 24h e 2h antes) pela API oficial do WhatsApp Business. Hoje o envio é manual: o app abre o WhatsApp com o texto pronto.
 3. ~~Login do barbeiro~~ (feito: e-mail/senha, Google e 2FA). Falta: mais de um profissional por barbearia.
 4. Link público para o cliente agendar sozinho.

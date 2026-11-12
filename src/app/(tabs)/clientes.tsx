@@ -8,10 +8,12 @@ import { CORTAR_RIPPLE, Card, Empty, FECHAR_TECLADO, RIPPLE, RIPPLE_ESCURO, Tag,
 import { C, R, S, T, TOQUE } from '@/constants/theme';
 import { estatisticasCliente, plural } from '@/lib/agenda';
 import { formatarTelefone } from '@/lib/whatsapp';
+import { AvisoSemConexao, useAtualizarAoPuxar } from '@/components/sincronizacao';
 import { useStore } from '@/store/store';
 
 export default function ClientesScreen() {
   const { state } = useStore();
+  const atualizarAoPuxar = useAtualizarAoPuxar();
   const insets = useSafeAreaInsets();
   const [busca, setBusca] = useState('');
   const [soAlerta, setSoAlerta] = useState(false);
@@ -75,7 +77,8 @@ export default function ClientesScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={[st.scroll, { gap: S.sm }]} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO}>
+      <ScrollView contentContainerStyle={[st.scroll, { gap: S.sm }]} keyboardShouldPersistTaps="handled" keyboardDismissMode={FECHAR_TECLADO} refreshControl={atualizarAoPuxar}>
+        <AvisoSemConexao />
         {lista.length === 0 ? (
           <Empty
             icon="people-outline"
