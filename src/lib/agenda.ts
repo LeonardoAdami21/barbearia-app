@@ -6,7 +6,11 @@ import { gerarHorarios, hoje, horaParaMin, jaPassou } from './datas';
 const OCUPA: Status[] = ['agendado', 'confirmado', 'concluido'];
 
 export const buscarCliente = (s: State, id: string) => s.clientes.find((c) => c.id === id);
+/** Acha inclusive serviços removidos, para mostrar o nome no histórico. */
 export const buscarServico = (s: State, id: string) => s.servicos.find((x) => x.id === id);
+
+/** Serviços que podem ser escolhidos em novos agendamentos. */
+export const servicosAtivos = (s: State) => s.servicos.filter((x) => x.ativo);
 
 export function estatisticasCliente(s: State, clienteId: string) {
   const ags = s.agendamentos.filter((a) => a.clienteId === clienteId);
@@ -34,7 +38,7 @@ export function horariosDoDia(s: State, data: string, servicoId: string, ignorar
     .filter((a) => a.data === data && a.id !== ignorarId && OCUPA.includes(a.status))
     .map((a) => {
       const ini = horaParaMin(a.hora);
-      return [ini, ini + (buscarServico(s, a.servicoId)?.duracaoMin ?? intervaloMin)] as const;
+      return [ini, ini + a.duracaoMin] as const;
     });
 
   return gerarHorarios(abertura, fechamento, intervaloMin).map((hora) => {

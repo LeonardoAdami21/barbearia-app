@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Btn, Card, Empty, Section, StatusTag, st } from '@/components/ui';
@@ -12,15 +13,17 @@ import {
   plural,
   precisaMarcarPresenca,
 } from '@/lib/agenda';
-import { confirmar } from '@/lib/confirmar';
+import { avisar, confirmar } from '@/lib/confirmar';
 import { dataParaMensagem, rotuloDia } from '@/lib/datas';
 import { abrirWhatsApp, formatarTelefone, preencherModelo } from '@/lib/whatsapp';
 import { useStore } from '@/store/store';
-import type { Agendamento } from '@/types';
+import { mensagemDeErro } from '@/services/api';
+import type { AlteracaoAgendamento } from '@/services/barbearia';
 
 export default function DetalheAgendamento() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { state, dispatch } = useStore();
+  const { state, acoes } = useStore();
+  const [ocupado, setOcupado] = useState(false);
   const ag = state.agendamentos.find((a) => a.id === id);
 
   if (!ag) return <Empty icon="calendar-outline" title="Agendamento não encontrado" />;
@@ -31,7 +34,18 @@ export default function DetalheAgendamento() {
   const aberto = ag.status === 'agendado' || ag.status === 'confirmado';
   const pendente = precisaMarcarPresenca(ag);
 
-  const atualizar = (patch: Partial<Agendamento>) => dispatch({ type: 'updateAgendamento', id: ag.id, patch });
+  /** Salva na API; um toque de cada vez, e o erro (ex.: horário já ocupado ao reabrir) vira aviso. */
+  async function atualizar(patch: AlteracaoAgendamento) {
+    if (ocupado) return;
+    setOcupado(true);
+    try {
+      await acoes.alterarAgendamento(ag!.id, patch);
+    } catch (error) {
+      avisar('Não foi possível salvar', mensagemDeErro(error));
+    } finally {
+      setOcupado(false);
+    }
+  }
 
   function enviar(tipo: 'confirmacao' | 'lembrete') {
     if (!cliente) return;
@@ -44,7 +58,7 @@ export default function DetalheAgendamento() {
       barbearia: state.config.nomeBarbearia,
     });
     abrirWhatsApp(cliente.telefone, msg).catch(() => {});
-    atualizar(tipo === 'confirmacao' ? { confirmacaoEnviada: true } : { lembreteEnviado: true });
+    void atualizar(tipo === 'confirmacao' ? { confirmacaoEnviada: true } : { lembreteEnviado: true });
   }
 
   return (
@@ -60,7 +74,7 @@ export default function DetalheAgendamento() {
         <View style={styles.linha}>
           <Ionicons name="cut-outline" size={18} color={C.muted} />
           <Text style={st.body}>
-            {servico?.nome ?? 'Serviço'} · {servico?.duracaoMin ?? '?'} min · {formatarPreco(servico?.preco ?? 0)}
+            {servico?.nome ?? 'Serviço'} · {ag.duracaoMin} min · {formatarPreco(ag.preco)}
           </Text>
         </View>
         {cliente && (
@@ -146,8 +160,8 @@ export default function DetalheAgendamento() {
           variant="ghost"
           onPress={() =>
             confirmar('Excluir agendamento?', 'Isso não pode ser desfeito.', () => {
-              dispatch({ type: 'removeAgendamento', id: ag.id });
               router.back();
+              acoes.removerAgendamento(ag.id).catch((error) => avisar('Não foi possível excluir', mensagemDeErro(error)));
             }, 'Excluir')
           }
         />
