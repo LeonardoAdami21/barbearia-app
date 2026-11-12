@@ -7,15 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Card, FECHAR_TECLADO, Field, RIPPLE_ICONE, Section, Tag, st } from '@/components/ui';
 import { C, R, S } from '@/constants/theme';
 import { useLayout } from '@/hooks/useLayout';
-import { formatarPreco } from '@/lib/agenda';
+import { formatarPreco, servicosAtivos } from '@/lib/agenda';
 import { avisar, confirmar } from '@/lib/confirmar';
 import { horaParaMin, horaValida } from '@/lib/datas';
 import { useAuth } from '@/providers/auth-provider';
-import { estadoExemplo, estadoVazio } from '@/store/seed';
-import { novoId, useStore } from '@/store/store';
+import { mensagemDeErro } from '@/services/api';
+import { useStore } from '@/store/store';
 
 export default function AjustesScreen() {
-  const { state, dispatch } = useStore();
+  const { state, acoes } = useStore();
+  const servicos = servicosAtivos(state);
+  const [salvando, setSalvando] = useState<'config' | 'servico' | null>(null);
   const { usuario, sair } = useAuth();
   const insets = useSafeAreaInsets();
   const { compacto, fonteGrande } = useLayout();
@@ -37,7 +39,7 @@ export default function AjustesScreen() {
   const [svDuracao, setSvDuracao] = useState('30');
   const [svPreco, setSvPreco] = useState('');
 
-  function salvarConfig() {
+  async function salvarConfig() {
     const int = parseInt(intervalo, 10);
     const lim = parseInt(limite, 10);
     if (!nomeBarbearia.trim()) return avisar('Nome', 'Informe o nome da barbearia.');
@@ -47,9 +49,9 @@ export default function AjustesScreen() {
       return avisar('Horário', 'O fechamento precisa ser depois da abertura.');
     if (!(int >= 5 && int <= 120)) return avisar('Intervalo', 'Use um intervalo entre 5 e 120 minutos.');
     if (!(lim >= 1)) return avisar('Limite de faltas', 'Use um número a partir de 1.');
-    dispatch({
-      type: 'setConfig',
-      patch: {
+    setSalvando('config');
+    try {
+      await acoes.salvarConfig({
         nomeBarbearia: nomeBarbearia.trim(),
         abertura,
         fechamento,
@@ -57,34 +59,43 @@ export default function AjustesScreen() {
         limiteFaltas: lim,
         msgConfirmacao,
         msgLembrete,
-      },
-    });
-    avisar('Pronto', 'Ajustes salvos.');
+      });
+      avisar('Pronto', 'Ajustes salvos.');
+    } catch (error) {
+      avisar('Não foi possível salvar', mensagemDeErro(error));
+    } finally {
+      setSalvando(null);
+    }
   }
 
-  function addServico() {
+  async function addServico() {
     const dur = parseInt(svDuracao, 10);
     const preco = parseFloat(svPreco.replace(',', '.'));
     if (!svNome.trim()) return avisar('Serviço', 'Informe o nome do serviço.');
     if (!(dur >= 5)) return avisar('Duração', 'Informe a duração em minutos.');
     if (!(preco >= 0)) return avisar('Preço', 'Informe o preço, por exemplo 45,00.');
-    dispatch({ type: 'addServico', servico: { id: novoId(), nome: svNome.trim(), duracaoMin: dur, preco } });
-    setSvNome('');
-    setSvPreco('');
+    setSalvando('servico');
+    try {
+      await acoes.addServico({ nome: svNome.trim(), duracaoMin: dur, preco: Math.round(preco * 100) / 100 });
+      setSvNome('');
+      setSvPreco('');
+    } catch (error) {
+      avisar('Não foi possível adicionar', mensagemDeErro(error));
+    } finally {
+      setSalvando(null);
+    }
   }
 
   function removerServico(id: string, nome: string) {
-    if (state.servicos.length === 1) return avisar('Serviço', 'Mantenha pelo menos um serviço.');
-    confirmar('Remover serviço?', `"${nome}" não aparecerá mais para novos agendamentos.`, () =>
-      dispatch({ type: 'removeServico', id }), 'Remover');
-  }
-
-  function recarregar(dados: 'vazio' | 'exemplo') {
-    const texto = dados === 'vazio' ? 'Clientes e agendamentos serão apagados deste aparelho.' : 'Os dados atuais serão trocados pelos dados de exemplo.';
-    confirmar('Tem certeza?', texto, () => {
-      const novo = dados === 'vazio' ? estadoVazio() : estadoExemplo();
-      dispatch({ type: 'carregar', state: { ...novo, config: state.config, servicos: dados === 'vazio' ? state.servicos : novo.servicos } });
-    }, 'Continuar');
+    if (servicos.length === 1) return avisar('Serviço', 'Mantenha pelo menos um serviço.');
+    confirmar(
+      'Remover serviço?',
+      `"${nome}" não aparecerá mais para novos agendamentos. Os horários já marcados continuam.`,
+      () => {
+        acoes.removerServico(id).catch((error) => avisar('Não foi possível remover', mensagemDeErro(error)));
+      },
+      'Remover',
+    );
   }
 
   return (
@@ -157,10 +168,10 @@ export default function AjustesScreen() {
           </Card>
         </Section>
 
-        <Btn label="Salvar ajustes" icon="checkmark" onPress={salvarConfig} />
+        <Btn label="Salvar ajustes" icon="checkmark" loading={salvando === 'config'} onPress={salvarConfig} />
 
         <Section title="Serviços">
-          {state.servicos.map((s) => (
+          {servicos.map((s) => (
             <Card key={s.id} style={styles.servico}>
               <View style={{ flex: 1 }}>
                 <Text style={st.body}>{s.nome}</Text>
@@ -181,17 +192,13 @@ export default function AjustesScreen() {
                 <Field label="Preço (R$)" value={svPreco} onChangeText={setSvPreco} keyboardType="decimal-pad" placeholder="45,00" />
               </View>
             </View>
-            <Btn label="Adicionar serviço" icon="add" variant="secondary" onPress={addServico} />
+            <Btn label="Adicionar serviço" icon="add" variant="secondary" loading={salvando === 'servico'} onPress={addServico} />
           </Card>
         </Section>
 
-        <Section title="Dados">
-          <Text style={st.dica}>
-            Por enquanto os dados ficam salvos só neste aparelho. Com o backend, eles passam a ficar na nuvem.
-          </Text>
-          <Btn label="Carregar dados de exemplo" icon="sparkles-outline" variant="secondary" onPress={() => recarregar('exemplo')} />
-          <Btn label="Apagar clientes e agendamentos" icon="trash-outline" variant="danger" onPress={() => recarregar('vazio')} />
-        </Section>
+        <Text style={st.dica}>
+          Clientes, agenda e ajustes ficam salvos na sua conta: entre em outro celular e está tudo lá.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

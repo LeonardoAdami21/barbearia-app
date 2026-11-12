@@ -6,15 +6,19 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-
 import { Aviso, Btn, Card, Chip, Empty, FECHAR_TECLADO, Field, Section, st } from '@/components/ui';
 import { C, S } from '@/constants/theme';
 import { colunas, useLayout } from '@/hooks/useLayout';
-import { buscarCliente, estatisticasCliente, formatarPreco, horariosDoDia } from '@/lib/agenda';
+import { buscarCliente, estatisticasCliente, formatarPreco, horariosDoDia, servicosAtivos } from '@/lib/agenda';
 import { avisar } from '@/lib/confirmar';
 import { addDias, hoje, rotuloDia } from '@/lib/datas';
 import { formatarTelefone, normalizarTelefone, telefoneValido } from '@/lib/whatsapp';
-import { novoId, useStore } from '@/store/store';
+import { mensagemDeErro } from '@/services/api';
+import type { NovoAgendamento as PedidoAgendamento } from '@/services/barbearia';
+import { useStore } from '@/store/store';
 
 export default function NovoAgendamento() {
   const params = useLocalSearchParams<{ data?: string; clienteId?: string }>();
-  const { state, dispatch } = useStore();
+  const { state, acoes } = useStore();
+  const servicos = servicosAtivos(state);
+  const [salvando, setSalvando] = useState(false);
   const headerHeight = useHeaderHeight();
   const { conteudo } = useLayout();
   const larguraHora = colunas(conteudo, 72, S.sm).item;
@@ -25,7 +29,7 @@ export default function NovoAgendamento() {
   const [cadastrando, setCadastrando] = useState(false);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [servicoId, setServicoId] = useState(state.servicos[0]?.id ?? '');
+  const [servicoId, setServicoId] = useState(servicos[0]?.id ?? '');
   const [data, setData] = useState(dataInicial);
   const [hora, setHora] = useState('');
   const [obs, setObs] = useState('');
@@ -47,44 +51,34 @@ export default function NovoAgendamento() {
     setHora('');
   }
 
-  function salvar() {
-    let id = clienteId;
-    if (!id) {
+  async function salvar() {
+    const pedido: PedidoAgendamento = { servicoId, data, hora, obs: obs.trim() || undefined };
+    if (clienteId) {
+      pedido.clienteId = clienteId;
+    } else {
       if (!cadastrando) return avisar('Falta o cliente', 'Busque um cliente ou cadastre um novo.');
       if (nome.trim().length < 2) return avisar('Nome do cliente', 'Informe o nome do cliente.');
       if (!telefoneValido(telefone))
         return avisar('Telefone inválido', 'Use DDD + número, por exemplo (27) 99999-9999.');
+      // Telefone já cadastrado: usa o cliente que já existe (a API faz o mesmo).
       const existente = state.clientes.find(
         (c) => normalizarTelefone(c.telefone) === normalizarTelefone(telefone),
       );
-      if (existente) {
-        id = existente.id;
-      } else {
-        id = novoId();
-        dispatch({
-          type: 'addCliente',
-          cliente: { id, nome: nome.trim(), telefone: telefone.replace(/\D/g, ''), criadoEm: new Date().toISOString() },
-        });
-      }
+      if (existente) pedido.clienteId = existente.id;
+      else pedido.novoCliente = { nome: nome.trim(), telefone };
     }
     if (!servicoId) return avisar('Serviço', 'Cadastre um serviço em Ajustes.');
     if (!hora) return avisar('Horário', 'Escolha um horário livre.');
 
-    const agId = novoId();
-    dispatch({
-      type: 'addAgendamento',
-      agendamento: {
-        id: agId,
-        clienteId: id,
-        servicoId,
-        data,
-        hora,
-        status: 'agendado',
-        obs: obs.trim() || undefined,
-        criadoEm: new Date().toISOString(),
-      },
-    });
-    router.replace(`/agendamento/${agId}`);
+    setSalvando(true);
+    try {
+      const novo = await acoes.addAgendamento(pedido);
+      router.replace(`/agendamento/${novo.id}`);
+    } catch (error) {
+      // Ex.: outro aparelho marcou o mesmo horário antes (a API responde 409).
+      avisar('Não foi possível agendar', mensagemDeErro(error));
+      setSalvando(false);
+    }
   }
 
   return (
@@ -140,7 +134,7 @@ export default function NovoAgendamento() {
 
         <Section title="Serviço">
           <View style={styles.grade}>
-            {state.servicos.map((s) => (
+            {servicos.map((s) => (
               <Chip
                 key={s.id}
                 label={s.nome}
@@ -181,7 +175,7 @@ export default function NovoAgendamento() {
 
         <Field label="Observação (opcional)" value={obs} onChangeText={setObs} placeholder="Ex.: degradê navalhado" multiline />
 
-        <Btn label="Agendar" icon="checkmark" onPress={salvar} />
+        <Btn label="Agendar" icon="checkmark" loading={salvando} onPress={salvar} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

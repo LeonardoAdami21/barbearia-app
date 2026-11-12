@@ -6,31 +6,30 @@ import { KeyboardAvoidingView, ScrollView } from 'react-native';
 import { Btn, FECHAR_TECLADO, Field, st } from '@/components/ui';
 import { avisar } from '@/lib/confirmar';
 import { normalizarTelefone, telefoneValido } from '@/lib/whatsapp';
-import { novoId, useStore } from '@/store/store';
+import { mensagemDeErro } from '@/services/api';
+import { useStore } from '@/store/store';
 
 export default function NovoCliente() {
-  const { state, dispatch } = useStore();
+  const { state, acoes } = useStore();
+  const [salvando, setSalvando] = useState(false);
   const headerHeight = useHeaderHeight();
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [obs, setObs] = useState('');
 
-  function salvar() {
+  async function salvar() {
     if (nome.trim().length < 2) return avisar('Nome', 'Informe o nome do cliente.');
     if (!telefoneValido(telefone)) return avisar('Telefone inválido', 'Use DDD + número, por exemplo (27) 99999-9999.');
     const repetido = state.clientes.find((c) => normalizarTelefone(c.telefone) === normalizarTelefone(telefone));
     if (repetido) return avisar('Telefone já cadastrado', `Este número é de ${repetido.nome}.`);
-    dispatch({
-      type: 'addCliente',
-      cliente: {
-        id: novoId(),
-        nome: nome.trim(),
-        telefone: telefone.replace(/\D/g, ''),
-        obs: obs.trim() || undefined,
-        criadoEm: new Date().toISOString(),
-      },
-    });
-    router.back();
+    setSalvando(true);
+    try {
+      await acoes.addCliente({ nome: nome.trim(), telefone, obs: obs.trim() || undefined });
+      router.back();
+    } catch (error) {
+      avisar('Não foi possível salvar', mensagemDeErro(error));
+      setSalvando(false);
+    }
   }
 
   return (
@@ -39,7 +38,7 @@ export default function NovoCliente() {
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome do cliente" autoFocus />
         <Field label="WhatsApp" value={telefone} onChangeText={setTelefone} placeholder="(27) 99999-9999" keyboardType="phone-pad" />
         <Field label="Observações (opcional)" value={obs} onChangeText={setObs} placeholder="Preferências de corte, alergias…" multiline />
-        <Btn label="Salvar cliente" icon="checkmark" onPress={salvar} />
+        <Btn label="Salvar cliente" icon="checkmark" loading={salvando} onPress={salvar} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
